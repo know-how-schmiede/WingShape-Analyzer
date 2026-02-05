@@ -1,6 +1,6 @@
 ﻿import os
 import customtkinter as ctk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -29,12 +29,14 @@ class WingShapeApp(ctk.CTk):
         self.sidebar.grid(row=0, column=0, sticky="nsw", padx=(12, 6), pady=12)
         self.main_frame = ctk.CTkFrame(self)
         self.main_frame.grid(row=0, column=1, sticky="nsew", padx=6, pady=12)
-        self.status_frame = ctk.CTkFrame(self, width=220)
-        self.status_frame.grid(row=0, column=2, sticky="nse", padx=(6, 12), pady=12)
+        self.status_frame = ctk.CTkFrame(self.sidebar)
+        self.table_frame = ctk.CTkFrame(self, width=320)
+        self.table_frame.grid(row=0, column=2, sticky="nse", padx=(6, 12), pady=12)
 
         self._build_sidebar()
         self._build_plot()
         self._build_status_panel()
+        self._build_table()
 
     def _build_sidebar(self) -> None:
         title = ctk.CTkLabel(
@@ -75,6 +77,8 @@ class WingShapeApp(ctk.CTk):
         )
         hint.pack(padx=16, pady=(12, 16), anchor="w")
 
+        self.status_frame.pack(padx=16, pady=(4, 16), fill="x")
+
     def _build_plot(self) -> None:
         self.figure = Figure(figsize=(6, 5), dpi=100)
         self.ax = self.figure.add_subplot(111)
@@ -94,16 +98,47 @@ class WingShapeApp(ctk.CTk):
             text="Format Detection",
             font=ctk.CTkFont(size=16, weight="bold"),
         )
-        header.pack(padx=16, pady=(16, 8), anchor="w")
+        header.pack(padx=12, pady=(12, 8), anchor="w")
 
         self.name_label = ctk.CTkLabel(self.status_frame, text="Name: --")
-        self.name_label.pack(padx=16, pady=(4, 4), anchor="w")
+        self.name_label.pack(padx=12, pady=(4, 4), anchor="w")
 
         self.format_label = ctk.CTkLabel(self.status_frame, text="Format: --")
-        self.format_label.pack(padx=16, pady=(4, 4), anchor="w")
+        self.format_label.pack(padx=12, pady=(4, 4), anchor="w")
 
         self.points_label = ctk.CTkLabel(self.status_frame, text="Points: --")
-        self.points_label.pack(padx=16, pady=(4, 4), anchor="w")
+        self.points_label.pack(padx=12, pady=(4, 12), anchor="w")
+
+    def _build_table(self) -> None:
+        header = ctk.CTkLabel(
+            self.table_frame,
+            text="Parsed Points",
+            font=ctk.CTkFont(size=16, weight="bold"),
+        )
+        header.pack(padx=12, pady=(12, 8), anchor="w")
+
+        table_container = ctk.CTkFrame(self.table_frame)
+        table_container.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+
+        columns = ("x", "y", "surface")
+        self.tree = ttk.Treeview(
+            table_container,
+            columns=columns,
+            show="headings",
+            height=20,
+        )
+        self.tree.heading("x", text="X")
+        self.tree.heading("y", text="Y")
+        self.tree.heading("surface", text="Upper/Lower")
+        self.tree.column("x", width=90, anchor="e")
+        self.tree.column("y", width=90, anchor="e")
+        self.tree.column("surface", width=100, anchor="w")
+
+        scrollbar = ttk.Scrollbar(table_container, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+        self.tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
     def load_file(self) -> None:
         filetypes = [
@@ -131,6 +166,7 @@ class WingShapeApp(ctk.CTk):
 
         self._update_status(data)
         self._plot_data(data)
+        self._update_table(data)
 
     def export_csv(self) -> None:
         if self.current_data is None:
@@ -173,6 +209,14 @@ class WingShapeApp(ctk.CTk):
         self.ax.set_title(data.name)
         self.ax.legend()
         self.canvas.draw_idle()
+
+    def _update_table(self, data: AirfoilData) -> None:
+        self.tree.delete(*self.tree.get_children())
+
+        for x_val, y_val in data.upper:
+            self.tree.insert("", "end", values=(f"{x_val:.6f}", f"{y_val:.6f}", "upper"))
+        for x_val, y_val in data.lower:
+            self.tree.insert("", "end", values=(f"{x_val:.6f}", f"{y_val:.6f}", "lower"))
 
 
 if __name__ == "__main__":

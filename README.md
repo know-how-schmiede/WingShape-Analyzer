@@ -1,53 +1,72 @@
-# WingShape-Analyzer ✈️
+# WingShape-Analyzer
 
-**WingShape-Analyzer** is a Python-based utility designed to automatically detect, analyze, and visualize aerodynamic airfoil coordinates. It serves as a bridge between raw coordinate data (from databases like UIUC or legacy CSV exports) and CAD/CFD software by ensuring point-cloud data is converted into a logical, continuous path.
+WingShape-Analyzer is a Python GUI tool to load, detect, visualize, and export airfoil coordinates.
+It focuses on robust format detection and clean plotting for CAD/CFD workflows.
 
-## ✨ Key Features
+## Features
 
-* **Smart Format Detection:** Automatically identifies the structure of the input data (Selig, Lednicer, or Paired-Coordinate format).
-* **Interactive GUI:** A user-friendly interface to load files and inspect airfoil shapes instantly.
-* **Coordinate Normalization:** Ensures the airfoil is correctly scaled and oriented for engineering applications.
-* **CAD-Ready Logic:** Reorders points into a continuous spline path to prevent "zigzag" artifacts during CAD import.
+- CustomTkinter GUI with file loading, plot view, and format/status panel.
+- Matplotlib plot with equal aspect ratio.
+- Format detection and parsing for common airfoil formats.
+- CSV export of upper and lower surfaces.
+- Version shown in the window title.
 
----
+## Project Structure
 
-## 🛠 Technical Logic & Pattern Recognition
+- `src/` Python sources (`main.py`, `analyzer.py`, `version.py`)
+- `doku/` Documentation (`logic.md`, `setup_guide.md`)
+- `data/` Place airfoil CSV/DAT files here
+- `setup_env.bat` Windows venv setup
+- `setup_env.sh` Mac/Linux venv setup
+- `requirements.txt` Dependencies
+- `version.md` Version log
 
-The core of the analyzer is its ability to distinguish between common airfoil data standards:
+## Setup
 
-### 1. Paired-Coordinate Format (Vertical Pairs)
-* **Pattern:** Consecutive rows share identical or near-identical X-coordinates but provide both the upper (positive Y) and lower (negative Y) surface points.
-* **Algorithm:** The tool splits the data into two sets, reverses the upper set, and joins them to create a smooth loop starting from the trailing edge, moving to the nose, and back.
+Requirements: Python 3.10+.
 
+Windows (PowerShell/CMD):
+```bat
+setup_env.bat
+```
 
+Mac/Linux:
+```bash
+bash setup_env.sh
+```
 
-### 2. Selig Format
-* **Pattern:** A single continuous block of data. Points typically start at the trailing edge ($x \approx 1.0$), wrap around the leading edge ($x \approx 0.0$), and return to the trailing edge.
-* **Algorithm:** Interpreted as a direct sequence for spline generation.
+## Run
 
-### 3. Lednicer Format
-* **Pattern:** Data is divided into two distinct blocks (Upper and Lower), often separated by a header or a blank line. Both blocks usually start from the leading edge ($x=0$).
-* **Algorithm:** Merges blocks by reversing the upper surface and appending the lower surface to ensure a consistent flow.
+Windows:
+```bat
+python src\main.py
+```
 
+Mac/Linux:
+```bash
+python src/main.py
+```
 
+## Supported Formats
 
----
+- Selig (continuous loop)
+- Lednicer (split blocks)
+- Paired-Coordinates (X, Y-low, Y-high)
+- XYZ CSV with constant third column (Z=0), separated into upper/lower
 
-## 📈 Visualizing the Geometry
+Details are documented in `doku/logic.md`.
 
-The application utilizes a **Matplotlib** backend to render the airfoil. To ensure geometric accuracy, the "Equal Aspect Ratio" is enforced, preventing the common mistake of displaying thin airfoils as overly thick or distorted.
+## Export
 
+Export writes a stacked CSV with columns:
+`x, y, surface` where surface is `upper` or `lower`.
 
+## Versioning
 
----
+- Current version is stored in `src/version.py`.
+- Changes are noted in `version.md`.
 
-## 📝 Roadmap
+## Notes
 
-* [ ] **Core Engine:** Automatic format detection logic.
-* [ ] **UI:** File dialog integration and info panel for airfoil metadata.
-* [ ] **Export:** Save processed coordinates as `.dat` (Selig format) or `.dxf` for CAD.
-* [ ] **Analysis:** Real-time calculation of maximum thickness and camber position.
-
-## 🤝 Contribution
-
-This project is developed with the assistance of **CodeX**. Feel free to open an issue or submit a pull request if you encounter unsupported coordinate patterns.
+If a dataset uses unusual ordering or coordinate conventions, please open an issue
+with a short sample of the file so the parser can be adjusted.
