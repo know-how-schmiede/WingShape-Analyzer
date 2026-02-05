@@ -1,4 +1,7 @@
-﻿import os
+import os
+import sys
+from pathlib import Path
+
 import customtkinter as ctk
 from tkinter import filedialog, messagebox, ttk
 
@@ -7,6 +10,11 @@ from matplotlib.figure import Figure
 
 from analyzer import AirfoilParser, AirfoilData
 from version import VERSION
+
+
+def resource_path(*parts: str) -> Path:
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+    return base.joinpath(*parts)
 
 
 class WingShapeApp(ctk.CTk):
@@ -21,6 +29,9 @@ class WingShapeApp(ctk.CTk):
         self.minsize(900, 600)
 
         self.current_data: AirfoilData | None = None
+        self.selected_point = None
+        self.data_dir = resource_path("data")
+        self.doku_dir = resource_path("doku")
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -140,6 +151,8 @@ class WingShapeApp(ctk.CTk):
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+        self.tree.bind("<<TreeviewSelect>>", self._on_table_select)
+
     def load_file(self) -> None:
         filetypes = [
             ("Airfoil files", "*.dat *.txt *.csv"),
@@ -147,7 +160,7 @@ class WingShapeApp(ctk.CTk):
         ]
         path = filedialog.askopenfilename(
             title="Open Airfoil File",
-            initialdir="data",
+            initialdir=str(self.data_dir) if self.data_dir.exists() else os.getcwd(),
             filetypes=filetypes,
         )
         if not path:
@@ -208,6 +221,7 @@ class WingShapeApp(ctk.CTk):
         self.ax.set_ylabel("y")
         self.ax.set_title(data.name)
         self.ax.legend()
+        self.selected_point = None
         self.canvas.draw_idle()
 
     def _update_table(self, data: AirfoilData) -> None:
@@ -217,6 +231,39 @@ class WingShapeApp(ctk.CTk):
             self.tree.insert("", "end", values=(f"{x_val:.6f}", f"{y_val:.6f}", "upper"))
         for x_val, y_val in data.lower:
             self.tree.insert("", "end", values=(f"{x_val:.6f}", f"{y_val:.6f}", "lower"))
+
+    def _on_table_select(self, _event) -> None:
+        selection = self.tree.selection()
+        if not selection:
+            return
+
+        item = self.tree.item(selection[0])
+        values = item.get("values", [])
+        if len(values) < 2:
+            return
+
+        try:
+            x_val = float(values[0])
+            y_val = float(values[1])
+        except (TypeError, ValueError):
+            return
+
+        if self.selected_point is not None:
+            try:
+                self.selected_point.remove()
+            except ValueError:
+                pass
+
+        self.selected_point = self.ax.scatter(
+            [x_val],
+            [y_val],
+            s=60,
+            color="#d62728",
+            edgecolor="black",
+            linewidth=0.6,
+            zorder=5,
+        )
+        self.canvas.draw_idle()
 
 
 if __name__ == "__main__":
