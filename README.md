@@ -3,6 +3,8 @@
 WingShape-Analyzer is a Python GUI tool to load, detect, visualize, and export airfoil coordinates.
 It focuses on robust format detection and clean plotting for CAD/CFD workflows.
 
+![WingShape-Analyzer](./doku/WingShap-Analyzer_030.png)
+
 ## Features
 
 - CustomTkinter GUI with file loading, plot view, and format/status panel.
